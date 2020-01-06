@@ -56,15 +56,14 @@ export default class NumberField extends PIXI.Container {
     }
 
     animate ():void {
-        this.animation && this.animation.stop();
+        this.animation && this.animation.stop().end();
         this.animation = new TWEEN.Tween(this.scale)
             .to({
-                x:this.scale.x+0.1,
-                y:this.scale.y+0.1
-            }, 500)
+                x: [this.scale.x+0.3, this.scale.x],
+                y: [this.scale.y+0.3, this.scale.y]
+            }, 1600)
             .easing(TWEEN.Easing.Quadratic.InOut)
-            .onStop(() => this.scale.set(1))
-            .yoyo(true).repeat(1)
+            .interpolation(TWEEN.Interpolation.Bezier)
             .start();
     }
 }

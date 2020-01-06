@@ -96,7 +96,7 @@ export default class Main {
         Main.checkState();
     };
     static checkState ():void {
-        console.log("check balance");
+        // console.log("check state");
         Main.isEnoughMoney = (Main.balance.value > Main.stake.value);
 
         Main.balance.active = Main.isEnoughMoney;
