@@ -27,7 +27,8 @@ export default class Main {
 
     static plus: PIXI.Graphics;
     static minus: PIXI.Graphics;
-    static isEnoughMoney: boolean;
+    static isEnoughMoney: boolean = false;
+    static isRolling: boolean = false;
 
     static init (container : HTMLElement|undefined) {
 
@@ -53,12 +54,6 @@ export default class Main {
 
         // YOU MIGHT MOVE PARAMS TO CONFIG IF NEEDED
         Main.slots = Main.stage.addChild(new Slots());
-
-        const textStyle = {
-            fontFamily: "Arial",
-            fontSize: 50,
-            fill: "white"
-        };
 
         Main.balance =      Main.stage.addChild(new NumberField("Balance", 100));
         Main.stake =        Main.stage.addChild(new NumberField("Bet", 5));
@@ -94,39 +89,34 @@ export default class Main {
 
     static onPlus () {
         Main.stake.setValue( Main.stake.value+1 );
-        Main.checkBalance();
+        Main.checkState();
     };
     static onMinus () {
         Main.stake.setValue( Main.stake.value-1 );
-        Main.checkBalance();
+        Main.checkState();
     };
-    static checkBalance ():boolean {
+    static checkState ():void {
         console.log("check balance");
-        if (Main.balance.value > Main.stake.value) {
-            Main.isEnoughMoney = true;
-            Main.balance.showActive();
-            Main.startButton.activate();
-            return true;
-        } else {
-            Main.isEnoughMoney = false;
-            Main.balance.showInactive();
-            Main.startButton.deactivate();
-            return false;
-        }
+        Main.isEnoughMoney = (Main.balance.value > Main.stake.value);
+
+        Main.balance.active = Main.isEnoughMoney;
+        Main.startButton.active = !Main.isRolling && Main.isEnoughMoney;
     }
 
     static onStop() {
+        Main.isRolling = false;
         Main.stopButton.deactivate();
         Main.checkWin();
-        Main.checkBalance();
+        Main.checkState();
     }
 
     static onStart () {
+        Main.isRolling = true;
         Main.stopButton.activate();
 
         Main.balance.setValue( Main.balance.value - Main.stake.value );
         Main.currentWin.setValue( 0 );
-        Main.checkBalance();
+        Main.checkState();
 
         const length = Main.slots.reelLength;
         const rollNumbers = [

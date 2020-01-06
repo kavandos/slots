@@ -9,6 +9,7 @@ export default class NumberField extends PIXI.Container {
     name: string;
     style: object;
     animation: TWEEN.Tween;
+    _active: boolean = true;
 
     constructor (name:string, balance: number) {
         super();
@@ -30,13 +31,18 @@ export default class NumberField extends PIXI.Container {
     }
 
     showInactive ():void {
+        this._active = false;
         this.title.tint =
             this.bgr.tint = 0x222222;
     }
-
     showActive ():void {
+        this._active = true;
         this.title.tint =
             this.bgr.tint = 0xffffff;
+    }
+    get active () {return this._active}
+    set active (isActive:boolean) {
+        isActive ? this.showActive() : this.showInactive();
     }
 
     setValue (val:number):void {

@@ -4,6 +4,7 @@ export default class Button extends PIXI.Container {
     bgr: PIXI.Graphics;
     inactiveTitle: PIXI.Text;
     activated: PIXI.Graphics;
+    _active:boolean;
 
     constructor(title: string, activeColor: number|undefined) {
         super();
@@ -30,10 +31,10 @@ export default class Button extends PIXI.Container {
             new PIXI.Text(title, Object.assign({}, style, {fill:0xffffff}))
         ).anchor.set(0.5);
 
-        this.activated.interactive = true;
-        this.activated.buttonMode = true;
-        this.activated.on("pointerdown", this.deactivate, this);
-        this.activated.on("pointerdown", this.onAction, this);
+        this.interactive = true;
+        this.buttonMode = true;
+        this.on("pointerdown", this.deactivate, this);
+        this.on("pointerdown", this.onAction, this);
     }
 
     onAction () {
@@ -41,12 +42,19 @@ export default class Button extends PIXI.Container {
     }
 
     activate () {
+        this._active = true;
         this.interactive = true;
         this.activated.visible = true;
     }
-
     deactivate () {
+        this._active = false;
         this.interactive = false;
         this.activated.visible = false;
+    }
+    get active () {
+        return this._active;
+    }
+    set active (isActive:boolean) {
+        isActive ? this.activate() : this.deactivate();
     }
 }
