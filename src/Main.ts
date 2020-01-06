@@ -3,6 +3,8 @@ import * as PIXI from "pixi.js";
 import TWEEN from "@tweenjs/tween.js";
 import Slots from "./Slots";
 import Button from "./Button";
+import NumberField from "./NumberField";
+import Tile from "./Tile";
 
 
 export default class Main {
@@ -13,11 +15,24 @@ export default class Main {
     static container: HTMLElement;
     static stage: PIXI.Container;
     static slots: Slots;
+    static winRow: number = 1;
+    static currentTilesMap: Tile[][];
+
     static startButton: Button;
     static stopButton: Button;
 
+    static balance: NumberField;
+    static currentWin: NumberField;
+    static stake: NumberField;
+
+    static plus: PIXI.Graphics;
+    static minus: PIXI.Graphics;
+    static isEnoughMoney: boolean;
+
     static init (container : HTMLElement|undefined) {
-        console.log("Tqween", TWEEN);
+
+        Object.defineProperty(window, "main", {value: Main});
+
         container = container || document.body;
         Main.container = container;
 
@@ -35,14 +50,37 @@ export default class Main {
 
         Main.stage = Main.app.stage;
 
-        // // DEBUG RECTANGLE
-        // Main.stage.addChild(new PIXI.Graphics().beginFill(255).drawRect(-300,-300,600,600));
 
-
+        // YOU MIGHT MOVE PARAMS TO CONFIG IF NEEDED
         Main.slots = Main.stage.addChild(new Slots());
 
-        // UI
-        // todo balance, total win, stake selector
+        const textStyle = {
+            fontFamily: "Arial",
+            fontSize: 50,
+            fill: "white"
+        };
+
+        Main.balance =      Main.stage.addChild(new NumberField("Balance", 100));
+        Main.stake =        Main.stage.addChild(new NumberField("Bet", 5));
+        Main.currentWin =   Main.stage.addChild(new NumberField("Win", 0));
+
+        Main.plus =   Main.stake.addChild(new PIXI.Graphics().beginFill(0xbb00)
+            .drawRect(-12,-4,24,8)
+            .drawRect(-4,-12,8,24)
+        );
+        Main.plus.position.set(Main.stake.width - Main.plus.width*.5, Main.stake.height/2 - Main.plus.width*.6);
+        Main.plus.interactive = true;
+        Main.plus.buttonMode = true;
+        Main.plus.on("pointerdown", Main.onPlus);
+
+        Main.minus =  Main.stake.addChild(new PIXI.Graphics().beginFill(0xbb0000)
+            .drawRect(-12,-4,24,8)
+        );
+        Main.minus.position.set(Main.plus.x, Main.stake.height/2 + Main.minus.width*.6);
+        Main.minus.interactive = true;
+        Main.minus.buttonMode = true;
+        Main.minus.on("pointerdown", Main.onMinus);
+
 
         Main.startButton = Main.stage.addChild(new Button("Start", 0x00cc00));
         Main.startButton.on("action", Main.onStart);
@@ -51,30 +89,91 @@ export default class Main {
         Main.stopButton.on("action", Main.stopSlots);
         Main.stopButton.deactivate();
 
-        Main.slots.on("stopReels", Main.onStop);
-
         Main.resize();
     }
 
+    static onPlus () {
+        Main.stake.setValue( Main.stake.value+1 );
+        Main.checkBalance();
+    };
+    static onMinus () {
+        Main.stake.setValue( Main.stake.value-1 );
+        Main.checkBalance();
+    };
+    static checkBalance ():boolean {
+        console.log("check balance");
+        if (Main.balance.value > Main.stake.value) {
+            Main.isEnoughMoney = true;
+            Main.balance.showActive();
+            Main.startButton.activate();
+            return true;
+        } else {
+            Main.isEnoughMoney = false;
+            Main.balance.showInactive();
+            Main.startButton.deactivate();
+            return false;
+        }
+    }
+
     static onStop() {
-        Main.startButton.activate();
         Main.stopButton.deactivate();
+        Main.checkWin();
+        Main.checkBalance();
     }
 
     static onStart () {
+        Main.stopButton.activate();
+
+        Main.balance.setValue( Main.balance.value - Main.stake.value );
+        Main.currentWin.setValue( 0 );
+        Main.checkBalance();
+
         const length = Main.slots.reelLength;
         const rollNumbers = [
             Math.floor(Math.random()*length) + length,
             Math.floor(Math.random()*length) + 2*length,
             Math.floor(Math.random()*length) + 3*length,
         ];
-        Main.slots.rollByTiles(rollNumbers);
-        Main.stopButton.activate()
+        const promise = Main.slots.rollByTiles(rollNumbers);
+        promise.then(function(results: Tile[][]){
+            Main.currentTilesMap = results;
+            Main.onStop();
+        });
     }
 
     static stopSlots () {
         Main.stopButton.deactivate();
         Main.slots.stopNow();
+    }
+
+    static checkWin(){
+        const matchNum = Main.calculateMatchNumber();
+        console.log(matchNum);
+        if (matchNum > 1) {
+            Main.currentWin.setValue( Main.stake.value*matchNum );
+            Main.balance.setValue( Main.balance.value + Main.currentWin.value );
+            Main.balance.animate();
+        } else {
+            Main.currentWin.setValue(0);
+        }
+    }
+
+    static calculateMatchNumber(): number {
+        // GET THE ROW AND CHECK FOR MATCHES
+
+        const groupTypes: Tile[][] = [];
+        const row: Tile[] = [];
+        Main.currentTilesMap.forEach( reel => {
+            const tile = reel[Main.winRow];
+            let currType = groupTypes.find(tiles=> (tiles.length && tiles[0].typeId === tile.typeId ));
+            if (!currType) {
+                currType = [];
+                groupTypes.push(currType);
+            }
+            currType.push(tile);
+        });
+        const quantities = groupTypes.map(tt=>tt.length)
+        return Math.max.apply(null, quantities);
     }
 
     static resize(){
@@ -109,6 +208,10 @@ export default class Main {
             Main.stopButton.width/2+10,
             appH/2-Main.stopButton.height*0.6
         );
+
+        Main.balance.position.set( -appW*0.48, -appH/2);
+        Main.stake.position.set( -appW*0.48, -appH/2 + 80);
+        Main.currentWin.position.set( -appW*0.48, -appH/2 + 80*2);
     }
 
     static tick(){

@@ -4,8 +4,10 @@ import Tile from "./Tile";
 
 export default class Slots extends PIXI.Container {
     reelLength: number;
-    border: PIXI.DisplayObject;
+    bgr: PIXI.Graphics;
+    mask: PIXI.Graphics;
     reels: Reel[];
+    tiles: Array< Promise<any>|Tile[] >;
 
     constructor(){
         super();
@@ -21,15 +23,13 @@ export default class Slots extends PIXI.Container {
 
         this.pivot.y = (visibleRows*0.5 - 0.5) * yStep;
 
-        this.mask =
+        this.bgr =
             this.addChild(new PIXI.Graphics()
             .beginFill(255, 0.5)
             .drawRect(-totalW/2, -0.5*yStep, totalW, totalH));
 
-        this.border =
-            this.addChild(new PIXI.Graphics()
-                .beginFill(255, 0.5)
-                .drawRect(-totalW/2, -0.5*yStep, totalW, totalH));
+        this.mask =
+            this.addChild(this.bgr.clone());
 
         this.reels = [
             this.addChild( new Reel([], yStep)),
@@ -50,18 +50,18 @@ export default class Slots extends PIXI.Container {
     }
 
     rollByTiles ( deltaPositions: number[] ) {
-        const rolls: Array< Promise<any>|Tile[] > = [];
+        this.tiles = [];
 
         this.reels.forEach((reel, i)=>{
             const roll = reel.rollBy(deltaPositions[i] || 0);
 
-            rolls.push(roll);
+            this.tiles.push(roll);
 
         });
-        this.emit("startReels", this);
+        // this.emit("startReels", this);
 
-        return Promise.all(rolls)
-            .then(this.onRollsComplete);
+        return Promise.all(this.tiles)
+            // .then(this.onRollsComplete);
     }
 
     onRollsComplete = (results: Tile[][]) => {
@@ -71,9 +71,11 @@ export default class Slots extends PIXI.Container {
             results[2][0].typeId
         );
         console.log(this);
-        this.emit("stopReels", this);
+        // this.emit("stopReels", results);
         return results;
     };
 
-    stopNow () {this.reels.forEach(r=>r.interrupt())}
+    stopNow () {
+        this.reels.forEach(r=>r.interrupt());
+    }
 }
