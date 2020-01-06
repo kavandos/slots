@@ -1,10 +1,12 @@
 import * as PIXI from "pixi.js";
-import * as TWEEN from "@tweenjs/tween.js";
+//@ts-ignore
+import TWEEN from "@tweenjs/tween.js";
 import Tile from "./Tile";
 
 export default class Reel extends PIXI.Container {
     tiles: Tile[];
     rowsStep: number;
+    //@ts-ignore
     rollTween: TWEEN.Tween;
     private _rollPosition: number;
     readonly _rollSpeed: number;

@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
-import * as TWEEN from "@tweenjs/tween.js";
+//@ts-ignore
+import TWEEN from "@tweenjs/tween.js";
 import Slots from "./Slots";
 import Button from "./Button";
 
@@ -16,6 +17,7 @@ export default class Main {
     static stopButton: Button;
 
     static init (container : HTMLElement|undefined) {
+        console.log("Tqween", TWEEN);
         container = container || document.body;
         Main.container = container;
 
@@ -111,6 +113,7 @@ export default class Main {
 
     static tick(){
         // let elapsedMS = Main.app.ticker.elapsedMS;
+
         TWEEN.update();
     }
 }
